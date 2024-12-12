@@ -1,9 +1,10 @@
 #ifndef HELPER
 #define HELPER
-#include <stdio.h>
 #include "sleep.h"
 #include "xgpiops.h"
 #include "xsdps.h"
+#include <stdio.h>
+
 // cf.
 // https://docs.amd.com/r/en-US/ug585-zynq-7000-SoC-TRM/Register-gpio-DATA_1
 #define GPIO0_OUT_BASE 0xE000A040 //
@@ -29,26 +30,27 @@
 #define BGM_STAGE6_BOSS 2
 #define BGM_DEAD 3
 // SDIO MARCROs
-#define NUM_BLOCKS (491520+524288)//Two volumes
-//#define NUM_BLOCKS (2400)//Two volumes
+#define NUM_BLOCKS (491520 + 524288) // Two volumes
+// #define NUM_BLOCKS (2400)//Two volumes
 #define SECTOR_OFFSET 0
 // Fb draw
 
 #define LINE_STRIDE_BYTE 2560
 
+#define RGB(r, g, b) ((r << 24) | (g << 16) | (b << 8))
 // Binding
 
-#define GPIO0_OUT *((volatile uint32_t*)GPIO0_OUT_BASE)
-#define GPIO2_OUT *((volatile uint32_t*)GPIO2_OUT_BASE)
-#define GPIO3_IN *((volatile uint32_t*)GPIO3_IN_BASE)
-#define KEYS_TOUHOU ((GPIO3_IN>>2)&0x3F) // bit [7:2], 6 keys
-void setup_AUDIO(uint32_t is_BGM,uint32_t audio_type);
+#define GPIO0_OUT *((volatile uint32_t *)GPIO0_OUT_BASE)
+#define GPIO2_OUT *((volatile uint32_t *)GPIO2_OUT_BASE)
+#define GPIO3_IN *((volatile uint32_t *)GPIO3_IN_BASE)
+#define KEYS_TOUHOU ((GPIO3_IN >> 2) & 0x3F) // bit [7:2], 6 keys
+void setup_AUDIO(uint32_t is_BGM, uint32_t audio_type);
 void set_audio_volume(uint8_t volume_shift);
-int SDIO_Read(uint32_t dest_mem_addr,uint32_t start_sector,uint32_t sector_count);
+int SDIO_Read(uint32_t dest_mem_addr, uint32_t start_sector, uint32_t sector_count);
 void toggle_fb0_alt();
 void toggle_fb1_alt();
 void toggle_render();
-void clear_fb(void* fb_ptr);
+void clear_fb(void *fb_ptr);
 #define clear_fb0() clear_fb(FB0_BASE)
 #define clear_fb0_alt() clear_fb(FB0_ALT_BASE)
 #define clear_fb1() clear_fb(FB1_BASE)
