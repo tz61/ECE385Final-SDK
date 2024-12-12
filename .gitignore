@@ -1,0 +1,11 @@
+*
+*.*
+!*/
+pl_zynq7010/
+.metadata/
+!*.cpp
+!*.c
+!*.h
+!*.hpp
+!*.ld
+!.gitignore
