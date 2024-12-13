@@ -1,4 +1,5 @@
 #include "helper.h"
+#include "structure.h"
 #include "xil_cache.h"
 #include "xil_printf.h"
 #include <stdio.h>
@@ -27,6 +28,101 @@ void copy_bullet_sprite_to_dest() {
     xil_printf("color at (8,8):%04x\r\n", Bullet_sprite[256 * 8 + 8]);
     xil_printf("color at (8,8) in mem:%04x\r\n", *((volatile uint16_t *)(BULLET_SPRITE_BASE + 2 * (256 * 8 + 8))));
 }
+typedef struct {
+    uint32_t x;
+    uint32_t y;
+    uint32_t type;
+    uint32_t valid;
+} bullet_t;
+bullet_t enemy_bullet[2048];
+bullet_t player_bullet[256];
+void clear_enemy_bullet() {
+    // clear all enemy bullet
+    for (int i = 0; i < 2048; i++) {
+        enemy_bullet[i].type = 0;
+        enemy_bullet[i].x = 0;
+        enemy_bullet[i].y = 0;
+        enemy_bullet[i].valid = 0;
+    }
+}
+void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
+    enemy_bullet[idx].x = x;
+    enemy_bullet[idx].y = y;
+    enemy_bullet[idx].type = type;
+    enemy_bullet[idx].valid = 1;
+}
+void invalidate_enemy_bullet(uint32_t idx) { enemy_bullet[idx].valid = 0; }
+void map_enemy_bullet_to_vram() {
+    static uint16_t bucket[12 * 14]; // bucket for each tile, max 16 bullets for each tile
+    // clear bucket
+    for (int i = 0; i < 12 * 14; i++) {
+        bucket[i] = 0;
+    }
+    volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
+    for (int i = 0; i < 2688; i++) {
+        *dest_vram = 0;
+        dest_vram++;
+    }
+    // reset position
+    dest_vram = (uint32_t *)GAME_INFO_BASE;
+    for (int i = 0; i < 2048; i++) {
+        bullet_t tmp_b = enemy_bullet[i];
+        if (tmp_b.valid) {
+            sprite_t info = get_enemy_bullet_info(tmp_b.type);
+            // get this bullet's overlapping tile
+            // rectangle (x,y,w,h) = (tmp_b.x,tmp_b.y,info.width,info.height)
+            // each tile 32x32
+            // 12(x)x14(y) tiles
+
+            // left/top corner
+            int tile_x = tmp_b.x / 32;
+            int tile_y = tmp_b.y / 32;
+            // right/bottom corner
+            int tile_x_end = (tmp_b.x + info.width) / 32;
+            int tile_y_end = (tmp_b.y + info.height) / 32;
+            for (int k = tile_x; k <= tile_x_end; k++) {
+                for (int l = tile_y; l <= tile_y_end; l++) {
+                    int tile_idx = l * 12 + k;
+                    // find a empty slot in this tile
+                    if (bucket[tile_idx] < 16) {
+                        dest_vram[tile_idx * 16 + bucket[tile_idx]] = compose_entity(tmp_b.x, tmp_b.y, 0, tmp_b.type, 1);
+                        bucket[tile_idx]++;
+                    } // else just ignore this bullet
+                }
+            }
+        }
+    }
+    Xil_DCacheFlushRange(GAME_INFO_BASE, (12 * 14 * (16 + 8) + 64) * 4);
+}
+void map_player_bullet_to_vram() {
+    volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
+    for (int i = 2688; i < 4032; i++) {
+        *dest_vram = 0;
+        dest_vram++;
+    }
+    for (int i = 0; i < 2048; i++) {
+        bullet_t tmp_b = enemy_bullet[i];
+        if (tmp_b.valid) {
+            sprite_t info = get_enemy_bullet_info(tmp_b.type);
+        }
+    }
+}
+uint32_t compose_entity(uint32_t X, uint32_t Y, uint32_t ROT, uint32_t TYPE, uint32_t VALID) {
+    return ((X) | ((Y) << 9) | ((ROT) << 18) | ((TYPE) << 27) | ((VALID) << 31));
+}
+void test_write_game_info() {
+    // 0x 0081 0000
+    xil_printf("Writing test game info\r\n");
+    volatile uint32_t *dest = (uint32_t *)GAME_INFO_BASE;
+    for (int i = 0; i < 4096; i++) {
+        *dest = 0;
+        dest++;
+    }
+    dest = (uint32_t *)GAME_INFO_BASE;
+    Xil_DCacheFlushRange(GAME_INFO_BASE, (12 * 14 * (16 + 8) + 64) * 4);
+    xil_printf("Write test done\r\n");
+}
+
 void setup_AUDIO(uint32_t is_BGM, uint32_t audio_type) {
     GPIO2_OUT |= (((is_BGM << 4) + audio_type) << 4); // [8:4], bit [8] BGM =1
     GPIO2_OUT |= 0x8;                                 // toggle bit 3

@@ -116,7 +116,7 @@ void soft_draw_board_sprite(void *fb_ptr, type_object category, int type, int de
     }
     Xil_DCacheFlushRange(fb_ptr, LINE_STRIDE_BYTE * 640);
 }
-void test_map(void *fb_ptr) {
+void test_bullet_map(void *fb_ptr) {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 2; j++) {
             soft_draw_board_sprite(fb_ptr, ENEMY_BULLET, (i + j * 8) % 16, 32 * i, 32 * j);

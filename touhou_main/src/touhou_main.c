@@ -43,6 +43,7 @@ int main() {
     //  debug_console();
 
     copy_bullet_sprite_to_dest();
+    test_write_game_info();
     uint32_t sfx_type = 0;
     uint32_t bgm_type = 0;
     // init timer
@@ -54,13 +55,37 @@ int main() {
     uint32_t time_tick = 0, time_tick_last = 0;
     uint32_t frame = 0;
     time_tick = get_time_tick();
+    clear_enemy_bullet();
+    int32_t bullet_x = 0;
+    int32_t bullet_y = 0;
+    int32_t dir_x = 1;
+    int32_t dir_y = 1;
     while (1) {
-        test_draw2d_time();//4ms
-        test_60frame_time();
-        clear_fb0();
+        set_enemy_bullet(0, bullet_x, bullet_y, 15);
+        map_enemy_bullet_to_vram();
+        test_draw2d_time(); // 4ms, max 16ms
+        // test_60frame_time();
+        bullet_x += dir_x;
+        bullet_y += dir_y;
+        if(bullet_x >= 384){
+            bullet_x = 383;
+            dir_x = -1;
+        }
+        if(bullet_x < 0){
+            bullet_x = 0;
+            dir_x = 1;
+        }
+        if(bullet_y >= 448){
+            bullet_y = 447;
+            dir_y = -1;
+        }
+        if(bullet_y < 0){
+            bullet_y = 0;
+            dir_y = 1;
+        }
         // usleep(1000000); // 1s
 
-        // test_map(FB1_BASE);
+        // test_bullet_map(FB1_BASE);
         // uint32_t ms = (time_tick_last - time_tick) / 333333;
         // xil_printf("Draw Time:%x, to msecond:%d, curtime:%x\r\n", time_tick_last - time_tick, ms, time_tick);
         // time_tick_last = time_tick;
