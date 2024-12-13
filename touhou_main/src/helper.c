@@ -4,6 +4,7 @@
 #include "xil_printf.h"
 #include <stdio.h>
 extern uint16_t Bullet_sprite[128 * 256];
+uint8_t key_z, key_shift, key_up, key_down, key_left, key_right;
 XScuTimer_Config *ConfigPtr;
 XScuTimer Timer;
 XScuTimer *TimerInstance = &Timer;
@@ -258,6 +259,8 @@ void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text) {
             for (int k = 0; k < 8; k++) {
                 if ((cur_font & 0x1)) {
                     *ptr = color | 0x1; // bit 1 to enable drawing in fb1
+                } else {
+                    *ptr = 0;
                 }
                 cur_font >>= 1;
                 ptr++;
@@ -266,4 +269,125 @@ void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text) {
         }
     }
     Xil_DCacheFlushRange(fb_ptr, LINE_STRIDE_BYTE * 640);
+}
+void clear_text(void *fb_ptr, int x, int y, int length) {
+    volatile uint32_t *ptr;
+    for (int i = 0; i < length; i++) {
+        ptr = fb_ptr + y * LINE_STRIDE_BYTE + (x + i * 8) * 4;
+        for (int j = 0; j < 16; j++) { // 16 vertical lines, each line 8 pixels
+            for (int k = 0; k < 8; k++) {
+                *ptr = 0; // clear everything
+                ptr++;
+            }
+            ptr = ptr - 8 + LINE_STRIDE_BYTE / 4;
+        }
+    }
+    Xil_DCacheFlushRange(fb_ptr, LINE_STRIDE_BYTE * 640);
+}
+
+void get_keys() {
+    uint32_t tmp = KEYS_TOUHOU;
+    // clear all keys
+    key_z = 0;
+    key_shift = 0;
+    key_up = 0;
+    key_down = 0;
+    key_left = 0;
+    key_right = 0;
+    if (tmp & 0x1) {
+        key_z = 1;
+    }
+    if (tmp & 0x2) {
+        key_shift = 1;
+    }
+    if (tmp & 0x4) {
+        key_up = 1;
+    }
+    if (tmp & 0x8) {
+        key_down = 1;
+    }
+    if (tmp & 0x10) {
+        key_left = 1;
+    }
+    if (tmp & 0x20) {
+        key_right = 1;
+    }
+}
+void go_menu() {
+    static int8_t volume = 5;
+    get_keys();
+    if (key_shift && key_right) {
+        xil_printf("Go to menu!\r\n");
+        setup_AUDIO(SFX, SFX1_MENU_PAUSE);
+        usleep(200 * 1000);
+        while (1) {
+            get_keys();
+            if (key_shift && key_left) {
+
+                clear_text(FB1_BASE, MENU_X_OFFSET, 0, 20);
+                clear_text(FB1_BASE, MENU_X_OFFSET, 32, 20);
+                clear_text(FB1_BASE, MENU_X_OFFSET, 64, 20);
+                clear_text(FB1_BASE, MENU_X_OFFSET, 96, 20);
+                setup_AUDIO(SFX, SFX0_MENU_CANCEL);
+                xil_printf("Exit menu!\r\n");
+                break;
+            }
+            if (key_left) {
+                xil_printf("Decrease volume!\r\n");
+                volume += 1;
+                if (volume == 8) {
+                    volume = 7;
+                }
+                set_audio_volume(volume);
+            }
+            if (key_right) {
+                xil_printf("Increase volume!\r\n");
+                volume -= 1;
+                if (volume == -1) {
+                    volume = 0;
+                }
+                set_audio_volume(volume);
+            }
+            if (key_up) {
+                continue;
+            }
+            // Draw menu entrys
+            draw_text(FB1_BASE, MENU_X_OFFSET, 0, MENU_INACTIVE_COLOR, "Menu:");
+            draw_text(FB1_BASE, MENU_X_OFFSET, 32, MENU_INACTIVE_COLOR, "Left:-V");
+            draw_text(FB1_BASE, MENU_X_OFFSET, 64, MENU_INACTIVE_COLOR, "Right:+V");
+            char volume_str[21];
+            sprintf(volume_str, "Volume[0-7]:%d", 7 - volume);
+            draw_text(FB1_BASE, MENU_X_OFFSET, 96, MENU_ACTIVE_COLOR, volume_str);
+            // sleep when key pressed
+            if (key_z | key_shift | key_up | key_down | key_left | key_right) {
+                // setup_AUDIO(SFX, SFX2_MENU_OK); // too noisy
+                usleep(200 * 1000);
+            }
+            ReadAnimation();
+        }
+    }
+}
+
+// read one frame animation to FB0_BASE
+void ReadAnimation() {
+    static XSdPs SdInstance;
+    XSdPs_Config *SdConfig;
+    static uint32_t sector_read = 0;
+    int Status;
+    static int is_init = 0;
+    if (!is_init) {
+        SdConfig = XSdPs_LookupConfig(XPAR_XSDPS_0_DEVICE_ID);
+        XSdPs_CfgInitialize(&SdInstance, SdConfig, SdConfig->BaseAddress);
+        XSdPs_CardInitialize(&SdInstance);
+        is_init = 1;
+    }
+    if (sector_read < 10863 * 2400) { // 10863 frames
+        Status = XSdPs_ReadPolled(&SdInstance, 1015808 + sector_read, 2400, (u8 *)FB0_BASE);
+        if (Status == XST_SUCCESS) {
+            sector_read += 4800; // skip 1 frame
+        }
+    } else {
+        // reset(loop)
+        sector_read = 0;
+    }
 }

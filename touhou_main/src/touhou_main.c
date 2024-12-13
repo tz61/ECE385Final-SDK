@@ -23,18 +23,18 @@ int main() {
                          0xFFFFFFFF); // 1 for output, set bank0 as all output
     // Test PS GPIO
     GPIO0_OUT |= 0x1 << 7; // set led mio7 to 1
-                           // Clear Framebuffer
+    // Clear Framebuffer
     clear_fb0();
     clear_fb0_alt();
     clear_fb1();
     clear_fb1_alt();
     // load SD content to DDR3
-    // SDIO_Read(FB0_BASE, 0, NUM_BLOCKS);
+    SDIO_Read(FB0_BASE, 0, NUM_BLOCKS);
     // Clear buzzer
     clear_die_buzzer();
     // Setup BGM
-    //  set_audio_volume(volume);
-    //  setup_AUDIO(BGM,bgm);
+    set_audio_volume(volume);
+    setup_AUDIO(BGM, bgm);
     // setup interrupt
     setup_irq();
     // Test keyboard read
@@ -60,31 +60,16 @@ int main() {
     int32_t bullet_y = 0;
     int32_t dir_x = 1;
     int32_t dir_y = 1;
-    draw_text(FB1_BASE, 0, 0, RGB(0x66, 0xCC, 0xFF), "Hello World!");
-    return 0;
     while (1) {
-        set_enemy_bullet(0, bullet_x, bullet_y, 15);
-        map_enemy_bullet_to_vram();
-        test_draw2d_time(); // 4ms, max 16ms
+        // frame loop
+        // ReadAnimation();
+        go_menu();
+        ReadAnimation();
+        // set_enemy_bullet(0, bullet_x, bullet_y, 15);
+        // map_enemy_bullet_to_vram();
+        // test_draw2d_time(); // 4ms, max 16ms
         // test_60frame_time();
-        bullet_x += dir_x;
-        bullet_y += dir_y;
-        if(bullet_x >= 384){
-            bullet_x = 383;
-            dir_x = -1;
-        }
-        if(bullet_x < 0){
-            bullet_x = 0;
-            dir_x = 1;
-        }
-        if(bullet_y >= 448){
-            bullet_y = 447;
-            dir_y = -1;
-        }
-        if(bullet_y < 0){
-            bullet_y = 0;
-            dir_y = 1;
-        }
+        
         // usleep(1000000); // 1s
 
         // test_bullet_map(FB1_BASE);

@@ -42,6 +42,22 @@
 #define BGM_STAGE6_PATH 1
 #define BGM_STAGE6_BOSS 2
 #define BGM_DEAD 3
+#define SFX0_MENU_CANCEL 0
+#define SFX1_MENU_PAUSE 1
+#define SFX2_MENU_OK 2
+#define SFX3_PL_DEAD 3
+#define SFX4_PL_SHOOT 4
+#define SFX5_PL_GRAZE 5
+#define SFX6_PL_EXTEND 6
+#define SFX7_PL_CARDGET 7
+#define SFX8_PL_POWERUP 8
+#define SFX9_PL_CH 9
+#define SFX10_ENEMY_LAZER 10
+#define SFX11_ENEMY_TAN 11
+#define SFX12_ENEMY_BIG 12
+#define SFX13_ENEMY_DEAD 13
+#define SFX14_ENEMY_TIMEOUT 14
+#define SFX15_CARD_ISSUE 15
 // SDIO MARCROs
 #define NUM_BLOCKS (491520 + 524288) // Two volumes
 // #define NUM_BLOCKS (2400)//Two volumes
@@ -55,7 +71,7 @@
 
 #define RGB(r, g, b) ((r << 24) | (g << 16) | (b << 8))
 // Binding
-extern uint8_t font_rom[128*16];
+extern uint8_t font_rom[128 * 16];
 #define GPIO0_OUT *((volatile uint32_t *)GPIO0_OUT_BASE)
 #define GPIO2_OUT *((volatile uint32_t *)GPIO2_OUT_BASE)
 #define GPIO3_IN *((volatile uint32_t *)GPIO3_IN_BASE)
@@ -83,4 +99,11 @@ void map_enemy_bullet_to_vram();
 void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type);
 void invalidate_enemy_bullet(uint32_t idx);
 void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text);
+void clear_text(void *fb_ptr, int x, int y, int length);
+
+#define MENU_X_OFFSET FB1_END_X + 20
+#define MENU_INACTIVE_COLOR RGB(0x66, 0xCC, 0xFF)
+#define MENU_ACTIVE_COLOR RGB(0xFF, 0, 0)
+void go_menu();
+void ReadAnimation();
 #endif
