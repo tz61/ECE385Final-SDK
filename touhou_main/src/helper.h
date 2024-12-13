@@ -17,6 +17,7 @@
 #define FB1_ALT_BASE 0x01384000
 #define AUDIO_BASE_ADDR 0x014B0000
 #define AUDIO_FILE_SIZE 0x50bfe0
+#define BULLET_SPRITE_BASE 0x00800000
 #define FB1_START_X (33 - 1)
 #define FB1_END_X (33 - 1 + 384)
 #define FB1_START_Y (17 - 1)
@@ -36,6 +37,8 @@
 // Fb draw
 
 #define LINE_STRIDE_BYTE 2560
+// input 16bit, output 32bit
+#define RGB_DITHER(x) ((((x>>(1+2*5))&0x1F)<<(24+3))|(((x>>(1+1*5))&0x1F)<<(16+3))|(((x>>1)&0x1F)<<(8+3))|0x0)
 
 #define RGB(r, g, b) ((r << 24) | (g << 16) | (b << 8))
 // Binding
@@ -57,4 +60,5 @@ void clear_fb(void *fb_ptr);
 #define clear_fb1_alt() clear_fb(FB1_ALT_BASE)
 void set_die_buzzer();
 void clear_die_buzzer();
+void copy_bullet_sprite_to_dest();
 #endif

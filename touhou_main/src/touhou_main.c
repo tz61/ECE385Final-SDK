@@ -31,7 +31,7 @@ int main() {
     clear_fb1();
     clear_fb1_alt();
     // load SD content to DDR3
-    SDIO_Read(FB0_BASE, 0, NUM_BLOCKS);
+    // SDIO_Read(FB0_BASE, 0, NUM_BLOCKS);
     // Clear buzzer
     clear_die_buzzer();
     // Setup BGM
@@ -42,13 +42,19 @@ int main() {
     // Test control
     //  debug_console();
 
+    copy_bullet_sprite_to_dest();
     uint32_t sfx_type = 0;
     uint32_t bgm_type = 0;
+
+    draw_board_color(FB1_ALT_BASE, RGB(0x66, 0xCC, 0xFF));
+    draw_board_color(FB1_BASE, RGB(255, 255, 255));
     while (1) {
-        draw_board_color(FB1_BASE, RGB(255, 0, 0));
-        usleep(1000000); // 1s
-        draw_board_color(FB1_BASE, RGB(255, 0, 0));
-        usleep(1000000); // 1s
+        // toggle_fb1_alt();
+        test_map(FB1_BASE);
+        usleep(500000); // 0.5s
+        draw_board_color(FB1_BASE, RGB(255, 255, 255));
+        usleep(500000); // 0.5s
+        // draw_board_strips(FB1_ALT_BASE);
     }
 
     cleanup_platform();

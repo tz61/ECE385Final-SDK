@@ -1,5 +1,21 @@
 #include "helper.h"
+#include "xil_cache.h"
+#include "xil_printf.h"
 #include <stdio.h>
+extern uint16_t Bullet_sprite[128*256];
+void copy_bullet_sprite_to_dest(){
+	// 0x 0080 0000
+	xil_printf("Copying bullet sprite to dest\r\n");
+	volatile uint16_t *dest = (uint16_t *)BULLET_SPRITE_BASE;
+	for(int i=0;i<128*256;i++){
+		*dest = Bullet_sprite[i];
+		dest++;
+	}
+	Xil_DCacheFlushRange(BULLET_SPRITE_BASE, 128*256*2);
+	xil_printf("Copy done\r\n");
+	xil_printf("color at (8,8):%04x\r\n",Bullet_sprite[256*8+8]);
+	xil_printf("color at (8,8) in mem:%04x\r\n",*((volatile uint16_t*)(BULLET_SPRITE_BASE+2*(256*8+8))));
+}
 void setup_AUDIO(uint32_t is_BGM, uint32_t audio_type) {
     GPIO2_OUT |= (((is_BGM << 4) + audio_type) << 4); // [8:4], bit [8] BGM =1
     GPIO2_OUT |= 0x8;                                 // toggle bit 3
@@ -11,7 +27,7 @@ void set_audio_volume(uint8_t volume_shift) {
     GPIO2_OUT |= (volume_shift & 0x7);
 }
 void toggle_fb0_alt() {
-    // default 0
+    // default 0(not alt)
     static uint8_t fb0_alt = 1;
     // bit 9
     if (fb0_alt) {
@@ -23,7 +39,7 @@ void toggle_fb0_alt() {
     }
 }
 void toggle_fb1_alt() {
-    // default 0
+    // default 0(not alt)
     static uint8_t fb1_alt = 1;
     // bit 10
     if (fb1_alt) {
