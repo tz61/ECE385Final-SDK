@@ -45,15 +45,30 @@ int main() {
     copy_bullet_sprite_to_dest();
     uint32_t sfx_type = 0;
     uint32_t bgm_type = 0;
+    // init timer
+    XScuTimer_Config *ConfigPtr;
+    XScuTimer Timer;
+    XScuTimer *TimerInstance = &Timer;
+    uint32_t time_tick = 0, time_tick_last = 0;
+    ConfigPtr = XScuTimer_LookupConfig(XPAR_XSCUTIMER_0_DEVICE_ID);
+    XScuTimer_CfgInitialize(TimerInstance, ConfigPtr, ConfigPtr->BaseAddr);
+    XScuTimer_LoadTimer(TimerInstance, 0xFFFFFFFF);
+    time_tick_last = XScuTimer_GetCounterValue(TimerInstance);
+    XScuTimer_EnableAutoReload(TimerInstance);
+    XScuTimer_Start(TimerInstance);
 
     draw_board_color(FB1_ALT_BASE, RGB(0x66, 0xCC, 0xFF));
     draw_board_color(FB1_BASE, RGB(255, 255, 255));
     while (1) {
         // toggle_fb1_alt();
+        time_tick = XScuTimer_GetCounterValue(TimerInstance);
         test_map(FB1_BASE);
-        usleep(500000); // 0.5s
-        draw_board_color(FB1_BASE, RGB(255, 255, 255));
-        usleep(500000); // 0.5s
+        uint32_t ms = (time_tick_last - time_tick) / 333333;
+        xil_printf("Draw Time:%x, to msecond:%d, curtime:%x\r\n", time_tick_last - time_tick, ms, time_tick);
+        time_tick_last = time_tick;
+        usleep(1000000); // 1s
+        // draw_board_color(FB1_BASE, RGB(255, 255, 255)); takes around 88ms
+        usleep(1000000); // 1s
         // draw_board_strips(FB1_ALT_BASE);
     }
 

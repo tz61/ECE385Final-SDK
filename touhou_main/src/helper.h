@@ -3,6 +3,7 @@
 #include "sleep.h"
 #include "xgpiops.h"
 #include "xsdps.h"
+#include "xscutimer.h"
 #include <stdio.h>
 
 // cf.
