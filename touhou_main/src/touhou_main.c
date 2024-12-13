@@ -1,13 +1,12 @@
 #include "debug_funcs.h"
 #include "helper.h"
+#include "intr.h"
 #include "platform.h"
-#include "xil_cache.h"
 #include "xil_printf.h"
-#include <stdio.h>
 // #define TOUHOU1
 // #define TOUHOU2
 // #define ZJU_SHOW
-#define SLEEP
+#define XSCUGIC_SW_TIMEOUT_VAL 10000000U /* Wait for 10 sec */
 int main() {
     init_platform();
     xil_printf("\r\nTest Touhou board, Version:" __DATE__ " " __TIME__ "\r\n");
@@ -37,6 +36,8 @@ int main() {
     // Setup BGM
     //  set_audio_volume(volume);
     //  setup_AUDIO(BGM,bgm);
+    // setup interrupt
+    setup_irq();
     // Test keyboard read
     //  test_keys();
     // Test control
@@ -46,29 +47,31 @@ int main() {
     uint32_t sfx_type = 0;
     uint32_t bgm_type = 0;
     // init timer
-    XScuTimer_Config *ConfigPtr;
-    XScuTimer Timer;
-    XScuTimer *TimerInstance = &Timer;
-    uint32_t time_tick = 0, time_tick_last = 0;
-    ConfigPtr = XScuTimer_LookupConfig(XPAR_XSCUTIMER_0_DEVICE_ID);
-    XScuTimer_CfgInitialize(TimerInstance, ConfigPtr, ConfigPtr->BaseAddr);
-    XScuTimer_LoadTimer(TimerInstance, 0xFFFFFFFF);
-    time_tick_last = XScuTimer_GetCounterValue(TimerInstance);
-    XScuTimer_EnableAutoReload(TimerInstance);
-    XScuTimer_Start(TimerInstance);
-
+    setup_timer();
+    // Done Init everything
     draw_board_color(FB1_ALT_BASE, RGB(0x66, 0xCC, 0xFF));
     draw_board_color(FB1_BASE, RGB(255, 255, 255));
+
+    uint32_t time_tick = 0, time_tick_last = 0;
+    uint32_t frame = 0;
+    time_tick = get_time_tick();
     while (1) {
-        // toggle_fb1_alt();
-        time_tick = XScuTimer_GetCounterValue(TimerInstance);
-        test_map(FB1_BASE);
-        uint32_t ms = (time_tick_last - time_tick) / 333333;
-        xil_printf("Draw Time:%x, to msecond:%d, curtime:%x\r\n", time_tick_last - time_tick, ms, time_tick);
-        time_tick_last = time_tick;
-        usleep(1000000); // 1s
+        Xil_WaitForEventSet(XSCUGIC_SW_TIMEOUT_VAL, 1, &InitNewFrameCond);
+        InitNewFrameCond = FALSE;
+        frame++;
+        if (frame % (60) == 0) {
+            time_tick_last = time_tick;
+            time_tick = get_time_tick();
+            xil_printf("init new frame:%d,time_diff:%d\r\n", frame, (time_tick_last - time_tick) / 333333);
+        }
+
+        // test_map(FB1_BASE);
+        // uint32_t ms = (time_tick_last - time_tick) / 333333;
+        // xil_printf("Draw Time:%x, to msecond:%d, curtime:%x\r\n", time_tick_last - time_tick, ms, time_tick);
+        // time_tick_last = time_tick;
+        // usleep(1000000); // 1s
         // draw_board_color(FB1_BASE, RGB(255, 255, 255)); takes around 88ms
-        usleep(1000000); // 1s
+        // usleep(1000000); // 1s
         // draw_board_strips(FB1_ALT_BASE);
     }
 

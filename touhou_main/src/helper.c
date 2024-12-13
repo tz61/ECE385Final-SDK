@@ -2,19 +2,30 @@
 #include "xil_cache.h"
 #include "xil_printf.h"
 #include <stdio.h>
-extern uint16_t Bullet_sprite[128*256];
-void copy_bullet_sprite_to_dest(){
-	// 0x 0080 0000
-	xil_printf("Copying bullet sprite to dest\r\n");
-	volatile uint16_t *dest = (uint16_t *)BULLET_SPRITE_BASE;
-	for(int i=0;i<128*256;i++){
-		*dest = Bullet_sprite[i];
-		dest++;
-	}
-	Xil_DCacheFlushRange(BULLET_SPRITE_BASE, 128*256*2);
-	xil_printf("Copy done\r\n");
-	xil_printf("color at (8,8):%04x\r\n",Bullet_sprite[256*8+8]);
-	xil_printf("color at (8,8) in mem:%04x\r\n",*((volatile uint16_t*)(BULLET_SPRITE_BASE+2*(256*8+8))));
+extern uint16_t Bullet_sprite[128 * 256];
+XScuTimer_Config *ConfigPtr;
+XScuTimer Timer;
+XScuTimer *TimerInstance = &Timer;
+void setup_timer() {
+    ConfigPtr = XScuTimer_LookupConfig(XPAR_XSCUTIMER_0_DEVICE_ID);
+    XScuTimer_CfgInitialize(TimerInstance, ConfigPtr, ConfigPtr->BaseAddr);
+    XScuTimer_LoadTimer(TimerInstance, 0xFFFFFFFF);
+    XScuTimer_EnableAutoReload(TimerInstance);
+    XScuTimer_Start(TimerInstance);
+}
+uint32_t get_time_tick() { return XScuTimer_GetCounterValue(TimerInstance); }
+void copy_bullet_sprite_to_dest() {
+    // 0x 0080 0000
+    xil_printf("Copying bullet sprite to dest\r\n");
+    volatile uint16_t *dest = (uint16_t *)BULLET_SPRITE_BASE;
+    for (int i = 0; i < 128 * 256; i++) {
+        *dest = Bullet_sprite[i];
+        dest++;
+    }
+    Xil_DCacheFlushRange(BULLET_SPRITE_BASE, 128 * 256 * 2);
+    xil_printf("Copy done\r\n");
+    xil_printf("color at (8,8):%04x\r\n", Bullet_sprite[256 * 8 + 8]);
+    xil_printf("color at (8,8) in mem:%04x\r\n", *((volatile uint16_t *)(BULLET_SPRITE_BASE + 2 * (256 * 8 + 8))));
 }
 void setup_AUDIO(uint32_t is_BGM, uint32_t audio_type) {
     GPIO2_OUT |= (((is_BGM << 4) + audio_type) << 4); // [8:4], bit [8] BGM =1

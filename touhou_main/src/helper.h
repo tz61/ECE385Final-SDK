@@ -4,6 +4,8 @@
 #include "xgpiops.h"
 #include "xsdps.h"
 #include "xscutimer.h"
+#include "xscugic.h"
+#include "xil_exception.h"
 #include <stdio.h>
 
 // cf.
@@ -62,4 +64,6 @@ void clear_fb(void *fb_ptr);
 void set_die_buzzer();
 void clear_die_buzzer();
 void copy_bullet_sprite_to_dest();
+void setup_timer();
+uint32_t get_time_tick();
 #endif
