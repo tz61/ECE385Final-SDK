@@ -60,6 +60,8 @@ int main() {
     int32_t bullet_y = 0;
     int32_t dir_x = 1;
     int32_t dir_y = 1;
+    draw_text(FB1_BASE, 0, 0, RGB(0x66, 0xCC, 0xFF), "Hello World!");
+    return 0;
     while (1) {
         set_enemy_bullet(0, bullet_x, bullet_y, 15);
         map_enemy_bullet_to_vram();

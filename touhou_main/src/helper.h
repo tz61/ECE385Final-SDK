@@ -55,7 +55,7 @@
 
 #define RGB(r, g, b) ((r << 24) | (g << 16) | (b << 8))
 // Binding
-
+extern uint8_t font_rom[128*16];
 #define GPIO0_OUT *((volatile uint32_t *)GPIO0_OUT_BASE)
 #define GPIO2_OUT *((volatile uint32_t *)GPIO2_OUT_BASE)
 #define GPIO3_IN *((volatile uint32_t *)GPIO3_IN_BASE)
@@ -82,4 +82,5 @@ void clear_enemy_bullet();
 void map_enemy_bullet_to_vram();
 void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type);
 void invalidate_enemy_bullet(uint32_t idx);
+void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text);
 #endif

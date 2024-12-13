@@ -246,3 +246,24 @@ int SDIO_Read(uint32_t dest_mem_addr, uint32_t start_sector, uint32_t sector_cou
 
     return XST_SUCCESS;
 }
+
+void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text) {
+    volatile uint32_t *ptr;
+    for (int i = 0; text[i] != '\0'; i++) {
+        ptr = fb_ptr + y * LINE_STRIDE_BYTE + (x + i * 8) * 4;
+        char c = text[i];
+        for (int j = 0; j < 16; j++) { // 16 vertical lines, each line 8 pixels
+            uint8_t cur_font = font_rom[c * 16 + j];
+            // LSB is the leftmost pixel
+            for (int k = 0; k < 8; k++) {
+                if ((cur_font & 0x1)) {
+                    *ptr = color | 0x1; // bit 1 to enable drawing in fb1
+                }
+                cur_font >>= 1;
+                ptr++;
+            }
+            ptr = ptr - 8 + LINE_STRIDE_BYTE / 4;
+        }
+    }
+    Xil_DCacheFlushRange(fb_ptr, LINE_STRIDE_BYTE * 640);
+}
