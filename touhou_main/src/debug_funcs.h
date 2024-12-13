@@ -7,5 +7,6 @@ void test_keys();
 void draw_board_strips(void *fb_ptr);
 void draw_board_color(void *fb_ptr, uint32_t color);
 void soft_draw_board_sprite(void *fb_ptr, type_object category, int type, int dest_x, int dest_y);
-
+void test_60frame_time();
+void test_draw2d_time();
 #endif

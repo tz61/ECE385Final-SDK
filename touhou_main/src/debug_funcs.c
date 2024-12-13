@@ -1,6 +1,7 @@
 
 #include "debug_funcs.h"
 #include "helper.h"
+#include "intr.h"
 #include "structure.h"
 void test_keys() {
     while (1) {
@@ -132,4 +133,33 @@ void test_map(void *fb_ptr) {
     }
     soft_draw_board_sprite(fb_ptr, PLAYER, 0, 0, 128 + 32 + 64);
     soft_draw_board_sprite(fb_ptr, BOSS, 0, 64, 128 + 32 + 64);
+}
+void test_draw2d_time() {
+    uint32_t time_tick = 0, time_tick_last = 0;
+    time_tick = get_time_tick();
+    toggle_render();
+    Xil_WaitForEventSet(XSCUGIC_SW_TIMEOUT_VAL, 1, &Render2DDoneCond);
+    time_tick_last = time_tick;
+    time_tick = get_time_tick();
+    Render2DDoneCond = FALSE; // need to clear it
+    // note that timer decreases.
+    xil_printf("2D Render done! used time:%d\r\n", (time_tick_last - time_tick) / 333333);
+}
+void test_60frame_time() {
+    uint32_t time_tick = 0, time_tick_last = 0;
+    uint32_t frame = 0;
+    while (1) {
+        Xil_WaitForEventSet(XSCUGIC_SW_TIMEOUT_VAL, 1, &InitNewFrameCond);
+        InitNewFrameCond = FALSE; // need to clear it
+        if (frame == 0) {
+            time_tick = get_time_tick();
+        }
+        frame++;
+        if (frame % (61) == 0) {
+            time_tick_last = time_tick;
+            time_tick = get_time_tick();
+            xil_printf("Draw 60 frames, time_diff:%d\r\n", (time_tick_last - time_tick) / 333333);
+            return;
+        }
+    }
 }

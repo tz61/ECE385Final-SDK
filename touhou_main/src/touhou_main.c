@@ -6,7 +6,6 @@
 // #define TOUHOU1
 // #define TOUHOU2
 // #define ZJU_SHOW
-#define XSCUGIC_SW_TIMEOUT_VAL 10000000U /* Wait for 10 sec */
 int main() {
     init_platform();
     xil_printf("\r\nTest Touhou board, Version:" __DATE__ " " __TIME__ "\r\n");
@@ -49,21 +48,17 @@ int main() {
     // init timer
     setup_timer();
     // Done Init everything
-    draw_board_color(FB1_ALT_BASE, RGB(0x66, 0xCC, 0xFF));
-    draw_board_color(FB1_BASE, RGB(255, 255, 255));
+    // draw_board_color(FB1_ALT_BASE, RGB(0x66, 0xCC, 0xFF));
+    // draw_board_color(FB1_BASE, RGB(255, 255, 255));
 
     uint32_t time_tick = 0, time_tick_last = 0;
     uint32_t frame = 0;
     time_tick = get_time_tick();
     while (1) {
-        Xil_WaitForEventSet(XSCUGIC_SW_TIMEOUT_VAL, 1, &InitNewFrameCond);
-        InitNewFrameCond = FALSE;
-        frame++;
-        if (frame % (60) == 0) {
-            time_tick_last = time_tick;
-            time_tick = get_time_tick();
-            xil_printf("init new frame:%d,time_diff:%d\r\n", frame, (time_tick_last - time_tick) / 333333);
-        }
+        test_draw2d_time();//4ms
+        test_60frame_time();
+        clear_fb0();
+        // usleep(1000000); // 1s
 
         // test_map(FB1_BASE);
         // uint32_t ms = (time_tick_last - time_tick) / 333333;
