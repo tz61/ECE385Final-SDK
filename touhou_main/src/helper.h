@@ -98,6 +98,12 @@ void clear_enemy_bullet();
 void map_enemy_bullet_to_vram();
 void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type);
 void invalidate_enemy_bullet(uint32_t idx);
+void clear_player_bullet();
+void map_player_bullet_to_vram();
+void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type);
+void invalidate_player_bullet(uint32_t idx);
+
+
 void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text);
 void clear_text(void *fb_ptr, int x, int y, int length);
 

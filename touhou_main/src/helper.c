@@ -46,13 +46,29 @@ void clear_enemy_bullet() {
         enemy_bullet[i].valid = 0;
     }
 }
+void clear_player_bullet() {
+    // clear all player bullet
+    for (int i = 0; i < 256; i++) {
+        player_bullet[i].type = 0;
+        player_bullet[i].x = 0;
+        player_bullet[i].y = 0;
+        player_bullet[i].valid = 0;
+    }
+}
 void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
     enemy_bullet[idx].x = x;
     enemy_bullet[idx].y = y;
     enemy_bullet[idx].type = type;
     enemy_bullet[idx].valid = 1;
 }
+void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
+    player_bullet[idx].x = x;
+    player_bullet[idx].y = y;
+    player_bullet[idx].type = type;
+    player_bullet[idx].valid = 1;
+}
 void invalidate_enemy_bullet(uint32_t idx) { enemy_bullet[idx].valid = 0; }
+void invalidate_player_bullet(uint32_t idx) { player_bullet[idx].valid = 0; }
 void map_enemy_bullet_to_vram() {
     static uint16_t bucket[12 * 14]; // bucket for each tile, max 16 bullets for each tile
     // clear bucket
@@ -61,11 +77,8 @@ void map_enemy_bullet_to_vram() {
     }
     volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
     for (int i = 0; i < 2688; i++) {
-        *dest_vram = 0;
-        dest_vram++;
+        dest_vram[i] = 0;
     }
-    // reset position
-    dest_vram = (uint32_t *)GAME_INFO_BASE;
     for (int i = 0; i < 2048; i++) {
         bullet_t tmp_b = enemy_bullet[i];
         if (tmp_b.valid) {
@@ -96,15 +109,37 @@ void map_enemy_bullet_to_vram() {
     Xil_DCacheFlushRange(GAME_INFO_BASE, (12 * 14 * (16 + 8) + 64) * 4);
 }
 void map_player_bullet_to_vram() {
-    volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
-    for (int i = 2688; i < 4032; i++) {
-        *dest_vram = 0;
-        dest_vram++;
+    static uint16_t bucket[12 * 14]; // bucket for each tile, max 16 bullets for each tile
+    // clear bucket
+    for (int i = 0; i < 12 * 14; i++) {
+        bucket[i] = 0;
     }
-    for (int i = 0; i < 2048; i++) {
-        bullet_t tmp_b = enemy_bullet[i];
+    volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
+    // clear the vram
+    for (int i = 2688; i < 4032; i++) {
+        dest_vram[i] = 0;
+    }
+    for (int i = 0; i < 256; i++) {
+        bullet_t tmp_b = player_bullet[i];
         if (tmp_b.valid) {
-            sprite_t info = get_enemy_bullet_info(tmp_b.type);
+            xil_printf("Player bullet %d at (%d,%d)\r\n", i, tmp_b.x, tmp_b.y);
+            sprite_t info = get_player_bullet_info(tmp_b.type);
+            // left/top corner
+            int tile_x = tmp_b.x / 32;
+            int tile_y = tmp_b.y / 32;
+            // right/bottom corner
+            int tile_x_end = (tmp_b.x + info.width) / 32;
+            int tile_y_end = (tmp_b.y + info.height) / 32;
+            for (int k = tile_x; k <= tile_x_end; k++) {
+                for (int l = tile_y; l <= tile_y_end; l++) {
+                    int tile_idx = l * 12 + k;
+                    // find a empty slot in this tile
+                    if (bucket[tile_idx] < 8) {
+                        dest_vram[2688 + tile_idx * 8 + bucket[tile_idx]] = compose_entity(tmp_b.x, tmp_b.y, 0, tmp_b.type, 1);
+                        bucket[tile_idx]++;
+                    } // else just ignore this bullet
+                }
+            }
         }
     }
 }
@@ -120,6 +155,8 @@ void test_write_game_info() {
         dest++;
     }
     dest = (uint32_t *)GAME_INFO_BASE;
+    dest[0] = compose_entity(0, 0, 0, 0, 1);
+    dest[2688] = compose_entity(0, 0, 0, 3, 1);
     Xil_DCacheFlushRange(GAME_INFO_BASE, (12 * 14 * (16 + 8) + 64) * 4);
     xil_printf("Write test done\r\n");
 }

@@ -29,7 +29,7 @@ int main() {
     clear_fb1();
     clear_fb1_alt();
     // load SD content to DDR3
-    SDIO_Read(FB0_BASE, 0, NUM_BLOCKS);
+    // SDIO_Read(FB0_BASE, 0, NUM_BLOCKS);
     // Clear buzzer
     clear_die_buzzer();
     // Setup BGM
@@ -43,7 +43,6 @@ int main() {
     //  debug_console();
 
     copy_bullet_sprite_to_dest();
-    test_write_game_info();
     uint32_t sfx_type = 0;
     uint32_t bgm_type = 0;
     // init timer
@@ -56,6 +55,9 @@ int main() {
     uint32_t frame = 0;
     time_tick = get_time_tick();
     clear_enemy_bullet();
+    clear_player_bullet();
+    map_enemy_bullet_to_vram();
+    map_player_bullet_to_vram();
     int32_t bullet_x = 0;
     int32_t bullet_y = 0;
     int32_t dir_x = 1;
@@ -63,13 +65,16 @@ int main() {
     while (1) {
         // frame loop
         // ReadAnimation();
-        go_menu();
+        // go_menu();
         ReadAnimation();
-        // set_enemy_bullet(0, bullet_x, bullet_y, 15);
-        // map_enemy_bullet_to_vram();
-        // test_draw2d_time(); // 4ms, max 16ms
+        set_enemy_bullet(0, bullet_x, bullet_y, 15);
+        map_enemy_bullet_to_vram();
+
+        set_player_bullet(0, bullet_x, bullet_y, 2);
+        map_player_bullet_to_vram();
+        test_draw2d_time(); // 4ms, max 16ms
         // test_60frame_time();
-        
+
         // usleep(1000000); // 1s
 
         // test_bullet_map(FB1_BASE);
