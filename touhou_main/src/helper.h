@@ -94,22 +94,21 @@ void copy_bullet_sprite_to_dest();
 void test_write_game_info();
 void setup_timer();
 uint32_t get_time_tick();
-void clear_enemy_bullet();
-void map_enemy_bullet_to_vram();
+void clear_bullet();
 void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type);
-void invalidate_enemy_bullet(uint32_t idx);
-void clear_player_bullet();
-void map_player_bullet_to_vram();
 void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type);
-void invalidate_player_bullet(uint32_t idx);
 
 
 void draw_text(void *fb_ptr, int x, int y, uint32_t color, char *text);
 void clear_text(void *fb_ptr, int x, int y, int length);
-
+void get_keys();
+extern uint8_t key_z, key_shift, key_up, key_down, key_left, key_right;
 #define MENU_X_OFFSET FB1_END_X + 20
 #define MENU_INACTIVE_COLOR RGB(0x66, 0xCC, 0xFF)
 #define MENU_ACTIVE_COLOR RGB(0xFF, 0, 0)
 void go_menu();
 void ReadAnimation();
+uint8_t getMemFlag(volatile uint32_t* memAddr);
+void setMemFlag(volatile uint32_t* memAddr,uint8_t val);
+#define INFORM_READER 0x38000000
 #endif

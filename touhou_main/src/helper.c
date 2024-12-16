@@ -35,129 +35,41 @@ typedef struct {
     uint32_t type;
     uint32_t valid;
 } bullet_t;
-bullet_t enemy_bullet[2048];
-bullet_t player_bullet[256];
-void clear_enemy_bullet() {
-    // clear all enemy bullet
-    for (int i = 0; i < 2048; i++) {
-        enemy_bullet[i].type = 0;
-        enemy_bullet[i].x = 0;
-        enemy_bullet[i].y = 0;
-        enemy_bullet[i].valid = 0;
-    }
-}
-void clear_player_bullet() {
-    // clear all player bullet
-    for (int i = 0; i < 256; i++) {
-        player_bullet[i].type = 0;
-        player_bullet[i].x = 0;
-        player_bullet[i].y = 0;
-        player_bullet[i].valid = 0;
-    }
-}
-void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
-    enemy_bullet[idx].x = x;
-    enemy_bullet[idx].y = y;
-    enemy_bullet[idx].type = type;
-    enemy_bullet[idx].valid = 1;
-}
-void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
-    player_bullet[idx].x = x;
-    player_bullet[idx].y = y;
-    player_bullet[idx].type = type;
-    player_bullet[idx].valid = 1;
-}
-void invalidate_enemy_bullet(uint32_t idx) { enemy_bullet[idx].valid = 0; }
-void invalidate_player_bullet(uint32_t idx) { player_bullet[idx].valid = 0; }
-void map_enemy_bullet_to_vram() {
-    static uint16_t bucket[12 * 14]; // bucket for each tile, max 16 bullets for each tile
-    // clear bucket
-    for (int i = 0; i < 12 * 14; i++) {
-        bucket[i] = 0;
-    }
-    volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
-    for (int i = 0; i < 2688; i++) {
-        dest_vram[i] = 0;
-    }
-    for (int i = 0; i < 2048; i++) {
-        bullet_t tmp_b = enemy_bullet[i];
-        if (tmp_b.valid) {
-            sprite_t info = get_enemy_bullet_info(tmp_b.type);
-            // get this bullet's overlapping tile
-            // rectangle (x,y,w,h) = (tmp_b.x,tmp_b.y,info.width,info.height)
-            // each tile 32x32
-            // 12(x)x14(y) tiles
-
-            // left/top corner
-            int tile_x = tmp_b.x / 32;
-            int tile_y = tmp_b.y / 32;
-            // right/bottom corner
-            int tile_x_end = (tmp_b.x + info.width) / 32;
-            int tile_y_end = (tmp_b.y + info.height) / 32;
-            for (int k = tile_x; k <= tile_x_end; k++) {
-                for (int l = tile_y; l <= tile_y_end; l++) {
-                    int tile_idx = l * 12 + k;
-                    // find a empty slot in this tile
-                    if (bucket[tile_idx] < 16) {
-                        dest_vram[tile_idx * 16 + bucket[tile_idx]] = compose_entity(tmp_b.x, tmp_b.y, 0, tmp_b.type, 1);
-                        bucket[tile_idx]++;
-                    } // else just ignore this bullet
-                }
-            }
-        }
-    }
-    Xil_DCacheFlushRange(GAME_INFO_BASE, (12 * 14 * (16 + 8) + 64) * 4);
-}
-void map_player_bullet_to_vram() {
-    static uint16_t bucket[12 * 14]; // bucket for each tile, max 16 bullets for each tile
-    // clear bucket
-    for (int i = 0; i < 12 * 14; i++) {
-        bucket[i] = 0;
-    }
-    volatile uint32_t *dest_vram = (uint32_t *)GAME_INFO_BASE;
-    // clear the vram
-    for (int i = 2688; i < 4032; i++) {
-        dest_vram[i] = 0;
-    }
-    for (int i = 0; i < 256; i++) {
-        bullet_t tmp_b = player_bullet[i];
-        if (tmp_b.valid) {
-            xil_printf("Player bullet %d at (%d,%d)\r\n", i, tmp_b.x, tmp_b.y);
-            sprite_t info = get_player_bullet_info(tmp_b.type);
-            // left/top corner
-            int tile_x = tmp_b.x / 32;
-            int tile_y = tmp_b.y / 32;
-            // right/bottom corner
-            int tile_x_end = (tmp_b.x + info.width) / 32;
-            int tile_y_end = (tmp_b.y + info.height) / 32;
-            for (int k = tile_x; k <= tile_x_end; k++) {
-                for (int l = tile_y; l <= tile_y_end; l++) {
-                    int tile_idx = l * 12 + k;
-                    // find a empty slot in this tile
-                    if (bucket[tile_idx] < 8) {
-                        dest_vram[2688 + tile_idx * 8 + bucket[tile_idx]] = compose_entity(tmp_b.x, tmp_b.y, 0, tmp_b.type, 1);
-                        bucket[tile_idx]++;
-                    } // else just ignore this bullet
-                }
-            }
-        }
-    }
-}
 uint32_t compose_entity(uint32_t X, uint32_t Y, uint32_t ROT, uint32_t TYPE, uint32_t VALID) {
     return ((X) | ((Y) << 9) | ((ROT) << 18) | ((TYPE) << 27) | ((VALID) << 31));
+}
+void clear_bullet() {
+    volatile uint32_t *game_info = (uint32_t *)GAME_INFO_BASE;
+    // clear all enemy bullet
+    for (int i = 0; i < 2048; i++) {
+        game_info[i] = compose_entity(0, 0, 0, 0, 0);
+    }
+    Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
+}
+void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
+    volatile uint32_t *game_info = (uint32_t *)GAME_INFO_BASE;
+    game_info[idx] = compose_entity(x, y, 0, type, 1);
+    Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
+}
+void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
+    volatile uint32_t *game_info = (uint32_t *)GAME_INFO_BASE;
+    game_info[1536 + idx] = compose_entity(x, y, 0, type, 1);
+    Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
 }
 void test_write_game_info() {
     // 0x 0081 0000
     xil_printf("Writing test game info\r\n");
     volatile uint32_t *dest = (uint32_t *)GAME_INFO_BASE;
-    for (int i = 0; i < 4096; i++) {
+    for (int i = 0; i < 2048; i++) {
         *dest = 0;
         dest++;
     }
     dest = (uint32_t *)GAME_INFO_BASE;
-    dest[0] = compose_entity(0, 0, 0, 0, 1);
-    dest[2688] = compose_entity(0, 0, 0, 3, 1);
-    Xil_DCacheFlushRange(GAME_INFO_BASE, (12 * 14 * (16 + 8) + 64) * 4);
+    // enemy bullet
+    // dest[0] = compose_entity(8, 8, 0, 0, 1);
+    // player bullet
+    // dest[1536] = compose_entity(0, 0, 0, 3, 1);
+    Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
     xil_printf("Write test done\r\n");
 }
 
@@ -268,9 +180,13 @@ int SDIO_Read(uint32_t dest_mem_addr, uint32_t start_sector, uint32_t sector_cou
     /*
      * Read data from SD/eMMC.
      */
+    char loading_str[40];
+    uint32_t start_load_bgm = 0;
 #define MAX_SINGLE_READ_SECTOR_COUNT (2 * 1024 * 1024 / 512)
     xil_printf("\r\n SDIO Started reading!\r\n");
     while (sector_read < sector_count) {
+        sprintf(loading_str, "[Loading]Reading sectors:%d/%d", sector_read, sector_count);
+        draw_text(FB1_BASE, 160, 400, RGB(0x66, 0xCC, 0xFF), loading_str);
         xil_printf("\rReading %d/%d", sector_read, sector_count);
         Status = XSdPs_ReadPolled(&SdInstance, start_sector + sector_read, MAX_SINGLE_READ_SECTOR_COUNT,
                                   dest_mem_addr + sector_read * 512);
@@ -279,7 +195,16 @@ int SDIO_Read(uint32_t dest_mem_addr, uint32_t start_sector, uint32_t sector_cou
             // only 4096 sector. within a poll
             sector_read += MAX_SINGLE_READ_SECTOR_COUNT;
         }
+        if (sector_read >= 20000) {
+            if (!start_load_bgm) {
+                start_load_bgm = 1;
+                // Setup BGM
+                set_audio_volume(4);
+                setup_AUDIO(BGM, BGM_START);
+            }
+        }
     }
+    clear_text(FB1_BASE, 160, 400, 40);
     xil_printf("\r\n SDIO Read done!\r\n");
 
     return XST_SUCCESS;
@@ -351,7 +276,7 @@ void get_keys() {
     }
 }
 void go_menu() {
-    static int8_t volume = 5;
+    static int8_t volume = 4;
     get_keys();
     if (key_shift && key_right) {
         xil_printf("Go to menu!\r\n");
@@ -385,9 +310,6 @@ void go_menu() {
                 }
                 set_audio_volume(volume);
             }
-            if (key_up) {
-                continue;
-            }
             // Draw menu entrys
             draw_text(FB1_BASE, MENU_X_OFFSET, 0, MENU_INACTIVE_COLOR, "Menu:");
             draw_text(FB1_BASE, MENU_X_OFFSET, 32, MENU_INACTIVE_COLOR, "Left:-V");
@@ -400,7 +322,6 @@ void go_menu() {
                 // setup_AUDIO(SFX, SFX2_MENU_OK); // too noisy
                 usleep(200 * 1000);
             }
-            ReadAnimation();
         }
     }
 }
@@ -418,8 +339,12 @@ void ReadAnimation() {
         XSdPs_CardInitialize(&SdInstance);
         is_init = 1;
     }
+    uint32_t time_tick_last,time_tick;
     if (sector_read < 10863 * 2400) { // 10863 frames
+    	time_tick_last = get_time_tick();
         Status = XSdPs_ReadPolled(&SdInstance, 1015808 + sector_read, 2400, (u8 *)FB0_BASE);
+        time_tick = get_time_tick();
+        printf("SD Read:%f ms \r\n",((float)time_tick_last-(float)time_tick)/(float)333333);
         if (Status == XST_SUCCESS) {
             sector_read += 4800; // skip 1 frame
         }
@@ -427,4 +352,12 @@ void ReadAnimation() {
         // reset(loop)
         sector_read = 0;
     }
+}
+uint8_t getMemFlag(volatile uint32_t* memAddr){
+	Xil_DCacheInvalidateRange(memAddr,1);
+	return *memAddr;
+}
+void setMemFlag(volatile uint32_t* memAddr,uint8_t val){
+	Xil_DCacheInvalidateRange(memAddr,1);
+	*memAddr=val;
 }
