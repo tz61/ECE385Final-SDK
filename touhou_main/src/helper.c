@@ -46,14 +46,14 @@ void clear_bullet() {
     }
     Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
 }
-void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
+void set_enemy_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type, uint8_t valid) {
     volatile uint32_t *game_info = (uint32_t *)GAME_INFO_BASE;
-    game_info[idx] = compose_entity(x, y, 0, type, 1);
+    game_info[idx] = compose_entity(x, y, 0, type, valid);
     Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
 }
-void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type) {
+void set_player_bullet(uint32_t idx, uint32_t x, uint32_t y, uint32_t type, uint8_t valid) {
     volatile uint32_t *game_info = (uint32_t *)GAME_INFO_BASE;
-    game_info[1536 + idx] = compose_entity(x, y, 0, type, 1);
+    game_info[1536 + idx] = compose_entity(x, y, 0, type, valid);
     Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
 }
 void test_write_game_info() {
@@ -339,12 +339,12 @@ void ReadAnimation() {
         XSdPs_CardInitialize(&SdInstance);
         is_init = 1;
     }
-    uint32_t time_tick_last,time_tick;
+    uint32_t time_tick_last, time_tick;
     if (sector_read < 10863 * 2400) { // 10863 frames
-    	time_tick_last = get_time_tick();
+        time_tick_last = get_time_tick();
         Status = XSdPs_ReadPolled(&SdInstance, 1015808 + sector_read, 2400, (u8 *)FB0_BASE);
         time_tick = get_time_tick();
-        printf("SD Read:%f ms \r\n",((float)time_tick_last-(float)time_tick)/(float)333333);
+        printf("SD Read:%f ms \r\n", ((float)time_tick_last - (float)time_tick) / (float)333333);
         if (Status == XST_SUCCESS) {
             sector_read += 4800; // skip 1 frame
         }
@@ -353,11 +353,11 @@ void ReadAnimation() {
         sector_read = 0;
     }
 }
-uint8_t getMemFlag(volatile uint32_t* memAddr){
-	Xil_DCacheInvalidateRange(memAddr,1);
-	return *memAddr;
+uint8_t getMemFlag(volatile uint32_t *memAddr) {
+    Xil_DCacheInvalidateRange(memAddr, 1);
+    return *memAddr;
 }
-void setMemFlag(volatile uint32_t* memAddr,uint8_t val){
-	Xil_DCacheInvalidateRange(memAddr,1);
-	*memAddr=val;
+void setMemFlag(volatile uint32_t *memAddr, uint8_t val) {
+    Xil_DCacheInvalidateRange(memAddr, 1);
+    *memAddr = val;
 }
