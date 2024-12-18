@@ -109,5 +109,8 @@ void go_menu();
 void ReadAnimation();
 uint8_t getMemFlag(volatile uint32_t *memAddr);
 void setMemFlag(volatile uint32_t *memAddr, uint8_t val);
+void setup_SFX_with_delay(uint32_t audio_type);
 #define INFORM_READER 0x38000000
+#define INFORM_STAGE2 0x38000004
+#define INFORM_RESTART 0x38000008
 #endif

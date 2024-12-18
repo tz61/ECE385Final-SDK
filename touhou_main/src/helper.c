@@ -72,7 +72,18 @@ void test_write_game_info() {
     Xil_DCacheFlushRange(GAME_INFO_BASE, (2048) * 4);
     xil_printf("Write test done\r\n");
 }
-
+void setup_SFX_with_delay(uint32_t audio_type) {
+    static uint32_t time_tick, time_tick_last = 0;
+    time_tick = get_time_tick();
+    if (time_tick_last == 0) {
+        setup_AUDIO(SFX, audio_type);
+        time_tick_last = time_tick;
+    } else if ((time_tick_last - time_tick) / 333333 > 50) {
+        // max 300ms per sfx adding
+        setup_AUDIO(SFX, audio_type);
+        time_tick_last = time_tick;
+    }
+}
 void setup_AUDIO(uint32_t is_BGM, uint32_t audio_type) {
     GPIO2_OUT |= (((is_BGM << 4) + audio_type) << 4); // [8:4], bit [8] BGM =1
     GPIO2_OUT |= 0x8;                                 // toggle bit 3
@@ -199,7 +210,7 @@ int SDIO_Read(uint32_t dest_mem_addr, uint32_t start_sector, uint32_t sector_cou
             if (!start_load_bgm) {
                 start_load_bgm = 1;
                 // Setup BGM
-                set_audio_volume(4);
+                set_audio_volume(3);
                 setup_AUDIO(BGM, BGM_START);
             }
         }

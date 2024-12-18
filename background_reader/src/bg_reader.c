@@ -9,6 +9,8 @@
 #include <stdio.h>
 // learned that from https://www.youtube.com/watch?v=scdaa3KaJmo
 #define INFORM_READER 0x38000000
+#define INFORM_STAGE2 0x38000004
+#define INFORM_RESTART 0x38000008
 #define FB0_BASE 0x01000000
 #define FB0_ALT_BASE 0x01258000
 #define GPIO2_OUT_BASE 0xE000A048 // lower 32bits in EMIO
@@ -28,6 +30,7 @@ void ReadAnimation() {
     int Status;
     static int is_init = 0;
     static uint8_t fb0_alt = 1;
+    int is_stage2 = 0;
     if (!is_init) {
         SdConfig = XSdPs_LookupConfig(XPAR_XSDPS_0_DEVICE_ID);
         XSdPs_CfgInitialize(&SdInstance, SdConfig, SdConfig->BaseAddress);
@@ -49,21 +52,32 @@ void ReadAnimation() {
         if (Status == XST_SUCCESS) {
             sector_read += 4800; // skip 1 frame
         }
+        if (!is_stage2) {
+            if (sector_read > 8394926) {
+                is_stage2 = 1;
+                setMemFlag(INFORM_STAGE2, 1);
+            }
+        }
+        if(getMemFlag(INFORM_RESTART)){
+            sector_read = 0;
+            setMemFlag(INFORM_RESTART, 0);
+        }
     } else {
         // reset(loop)
         sector_read = 0;
+        is_stage2 = 0;
     }
 }
 int main() {
     init_platform();
-    Xil_SetTlbAttributes(0xFFFF0000,0x14de2);
+    Xil_SetTlbAttributes(0xFFFF0000, 0x14de2);
     xil_printf("\r\n3DBG reader board, Version:" __DATE__ " " __TIME__ "\r\n");
     setMemFlag(INFORM_READER, 0);
     while (1) {
         if (getMemFlag(INFORM_READER)) {
             break;
         }
-        usleep(50000);//sleep 50ms
+        usleep(50000); // sleep 50ms
     }
     while (1) {
         ReadAnimation();
